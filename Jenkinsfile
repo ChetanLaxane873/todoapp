@@ -6,15 +6,11 @@ pipeline {
         dockerImage = ""
     }
     agent any
+    
 
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/ChetanLaxane873/todoapp.git'
-            }
-        }
         
-        stage("Stopping existing container") {
+        stage("Cleanup") {
             steps{
                 script{
                     sh returnStatus: true, script: 'docker stop $(docker ps -a -q)'
@@ -23,6 +19,24 @@ pipeline {
                 }
             }
             
+        }
+        
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/ChetanLaxane873/todoapp.git'
+            }
+        }
+        
+        stage('SonarQube analysis') {
+            steps{
+                script{
+                    tool name: 'SonarQube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    def scannerHome = tool 'SonarQube';
+                    withSonarQubeEnv('SonarQube') { 
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=develop"
+                    }    
+                }
+            }
         }
         
         stage('Build') {
